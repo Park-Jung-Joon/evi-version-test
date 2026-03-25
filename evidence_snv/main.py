@@ -1,55 +1,66 @@
 import sys
 
-# Minor trial 1
 sys.path.append("..")
 from version import EVIDENCE_VERSION
 
 
-def analyze_snv(vcf_path: str) -> dict:
-    """SNV variant를 분석하고 결과 딕셔너리를 반환한다."""
-    print(f"[Evidence SNV {EVIDENCE_VERSION}] Analyzing: {vcf_path}")
-def analyze_snv(vcf_path: str, genome_build: str = "GRCh38") -> dict:
-    """SNV variant를 분석하고 결과 딕셔너리를 반환한다.
+class SnvAnalyzer:
+    """SNV 분석기 (config dict 기반).
 
-    NOTE: API 변경 - genome_build 파라미터 추가 (하위 호환 깨짐)
-    기존 호출 코드에서 positional arg로 사용하던 경우 수정 필요.
+    BREAKING CHANGE: 기존 analyze_snv() 함수 및 genome_build 파라미터가
+    제거되고, config dict를 받는 SnvAnalyzer 클래스로 전면 교체됨.
+    기존 코드에서 analyze_snv(vcf_path) 호출은 모두 수정 필요.
     """
-    print(
-        f"[Evidence SNV {EVIDENCE_VERSION}] "
-        f"Analyzing: {vcf_path} (build={genome_build})"
-    )
-    results = {
-        "total_variants": 150,
-        "pathogenic": 3,
-        "vus": 12,
-        "benign": 135,
-        "genome_build": genome_build,
-    }
-    return results
 
+    SUPPORTED_BUILDS = ("GRCh37", "GRCh38")
 
-def filter_by_quality(
-    variants: dict, min_quality: int = 30
-) -> dict:
-    """Quality score 기준으로 variant를 필터링한다."""
-    filtered_count = int(variants["total_variants"] * 0.85)
-    print(
-        f"[Evidence SNV {EVIDENCE_VERSION}] "
-        f"Filtering variants with min_quality={min_quality}"
-    )
-    return {
-        "total_before_filter": variants["total_variants"],
-        "total_after_filter": filtered_count,
-        "removed": variants["total_variants"] - filtered_count,
-    }
+    def __init__(self, config: dict):
+        genome_build = config.get("genome_build", "GRCh38")
+        if genome_build not in self.SUPPORTED_BUILDS:
+            raise ValueError(
+                f"Unsupported genome build: {genome_build}. "
+                f"Must be one of {self.SUPPORTED_BUILDS}"
+            )
+        self.config = config
+        self.genome_build = genome_build
+        self.min_quality = config.get("min_quality", 30)
+
+    def analyze(self, vcf_path: str) -> dict:
+        print(
+            f"[Evidence SNV {EVIDENCE_VERSION}] "
+            f"Analyzing: {vcf_path} (build={self.genome_build})"
+        )
+        return {
+            "total_variants": 150,
+            "pathogenic": 3,
+            "vus": 12,
+            "benign": 135,
+            "genome_build": self.genome_build,
+        }
+
+    def filter_by_quality(self, variants: dict) -> dict:
+        """Quality score 기준으로 variant를 필터링한다."""
+        filtered_count = int(variants["total_variants"] * 0.85)
+        print(
+            f"[Evidence SNV {EVIDENCE_VERSION}] "
+            f"Filtering variants with min_quality={self.min_quality}"
+        )
+        return {
+            "total_before_filter": variants["total_variants"],
+            "total_after_filter": filtered_count,
+            "removed": variants["total_variants"] - filtered_count,
+        }
 
 
 if __name__ == "__main__":
-    result = analyze_snv("sample_001.vcf")
+    config = {"genome_build": "GRCh38", "min_quality": 30}
+    analyzer = SnvAnalyzer(config)
+
+    result = analyzer.analyze("sample_001.vcf")
     for k, v in result.items():
         print(f"  {k}: {v}")
 
     print()
-    filtered = filter_by_quality(result, min_quality=30)
+    filtered = analyzer.filter_by_quality(result)
     for k, v in filtered.items():
         print(f"  {k}: {v}")
