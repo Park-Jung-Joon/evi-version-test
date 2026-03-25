@@ -5,9 +5,6 @@ sys.path.append("..")
 from version import EVIDENCE_VERSION
 
 
-def analyze_snv(vcf_path: str) -> dict:
-    """SNV variant를 분석하고 결과 딕셔너리를 반환한다."""
-    print(f"[Evidence SNV {EVIDENCE_VERSION}] Analyzing: {vcf_path}")
 def analyze_snv(vcf_path: str, genome_build: str = "GRCh38") -> dict:
     """SNV variant를 분석하고 결과 딕셔너리를 반환한다.
 
@@ -31,7 +28,7 @@ def analyze_snv(vcf_path: str, genome_build: str = "GRCh38") -> dict:
 def filter_by_quality(
     variants: dict, min_quality: int = 30
 ) -> dict:
-    """Quality score 기준으로 variant를 필터링한다."""
+    """Quality score 기준으로 variant를 필터링하여 결과를 반환한다."""
     filtered_count = int(variants["total_variants"] * 0.85)
     print(
         f"[Evidence SNV {EVIDENCE_VERSION}] "
