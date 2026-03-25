@@ -53,7 +53,7 @@ jobs:
         run: |
           EVI_VER=$(python -c "
           import re
-          text = open('evidence_snv/pyproject.toml').read()
+          text = open('evidence/pyproject.toml').read()
           print(re.search(r'version\s*=\s*\"([^\"]+)\"', text).group(1))
           ")
           PIP_VER=$(python -c "

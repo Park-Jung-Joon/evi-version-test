@@ -12,7 +12,7 @@ from pathlib import Path
 
 ROOT = Path(__file__).resolve().parent.parent
 
-EVIDENCE_TOML = ROOT / "evidence_snv" / "pyproject.toml"
+EVIDENCE_TOML = ROOT / "evidence" / "pyproject.toml"
 PIPELINE_TOML = ROOT / "pipeline" / "pyproject.toml"
 VERSION_PY = ROOT / "version.py"
 
