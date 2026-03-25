@@ -5,6 +5,9 @@ sys.path.append("..")
 from version import EVIDENCE_VERSION
 
 
+def analyze_snv(vcf_path: str) -> dict:
+    """SNV variant를 분석하고 결과 딕셔너리를 반환한다."""
+    print(f"[Evidence SNV {EVIDENCE_VERSION}] Analyzing: {vcf_path}")
 def analyze_snv(vcf_path: str, genome_build: str = "GRCh38") -> dict:
     """SNV variant를 분석하고 결과 딕셔너리를 반환한다.
 
