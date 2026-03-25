@@ -153,6 +153,49 @@ git push
 - changepacks JSON을 추가 커밋하면 CI가 통과로 전환되는지
 - genet/ 같은 비추적 디렉토리만 변경한 경우에는 changepacks 없이도 머지가 허용되는지
 
+### 시나리오 1-3: 여러 버전 등급이 섞여 있을 때 가장 높은 등급만 적용
+
+여러 작업자가 evidence에 대해 Major, Minor, Patch를 각각 올린 changepacks JSON이 dev에 쌓여 있는 상태에서, main 머지 시 가장 높은 등급(Major)만 적용되는 시나리오.
+
+```bash
+# --- 작업자 A: evidence_snv Patch ---
+git checkout dev && git checkout -b feat/snv-typo-fix
+# evidence_snv/main.py 오타 수정
+changepacks       # → evidence 선택 → Patch → "오타 수정"
+git add -A && git commit -m "fix: SNV 오타 수정"
+git push -u origin feat/snv-typo-fix
+# GitHub에서 dev로 PR → merge
+
+# --- 작업자 B: evidence_cnv Minor ---
+git checkout dev && git pull origin dev
+git checkout -b feat/cnv-new-filter
+# evidence_cnv/main.py에 새 필터 함수 추가
+changepacks       # → evidence 선택 → Minor → "CNV 필터 기능 추가"
+git add -A && git commit -m "feat: CNV 필터 기능 추가"
+git push -u origin feat/cnv-new-filter
+# GitHub에서 dev로 PR → merge
+
+# --- 작업자 C: evidence_snv Major ---
+git checkout dev && git pull origin dev
+git checkout -b feat/snv-api-breaking-change
+# evidence_snv/main.py 함수 시그니처 변경 (하위 호환 깨짐)
+changepacks       # → evidence 선택 → Major → "SNV API 인터페이스 변경"
+git add -A && git commit -m "feat!: SNV API 인터페이스 변경"
+git push -u origin feat/snv-api-breaking-change
+# GitHub에서 dev로 PR → merge
+
+# --- dev에 Patch + Minor + Major JSON 3개가 쌓인 상태 ---
+# CI 자동 머지 또는 수동으로 dev → main 머지
+# changepacks update가 가장 높은 등급(Major)만 적용
+# evidence: v1.0.0 → v2.0.0
+```
+
+**확인 포인트:**
+- dev에 3개의 changepack_log_*.json이 쌓여 있는지
+- main 머지 후 evidence 버전이 v2.0.0 (Major 1단계)으로만 올라가는지 (v1.1.1이나 v1.1.0이 아닌)
+- Patch, Minor 로그가 무시되지 않고 릴리즈 노트에는 모두 포함되는지
+- pipeline 버전은 변경되지 않는지
+
 ### 시나리오 2: pipeline 변경 → pipeline 버전 업
 
 ```bash
