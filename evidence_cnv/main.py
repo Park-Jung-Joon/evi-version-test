@@ -17,14 +17,16 @@ def analyze_cnv(bam_path: str) -> dict:
 
 def filter_by_size(cnvs: dict, min_size_kb: int = 100) -> dict:
     """CNV를 크기 기준으로 필터링한다."""
-    filtered = int(cnvs["total_cnvs"] * 0.6)
+    total = cnvs["total_cnvs"]
+    filtered = max(0, int(total * 0.6))
     print(
         f"[Evidence CNV {EVIDENCE_VERSION}] "
         f"Filtering CNVs with min_size={min_size_kb}kb"
     )
     return {
-        "total_before_filter": cnvs["total_cnvs"],
+        "total_before_filter": total,
         "total_after_filter": filtered,
+        "removed": total - filtered,
     }
 
 
