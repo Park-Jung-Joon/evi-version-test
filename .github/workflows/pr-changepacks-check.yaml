@@ -16,12 +16,36 @@ jobs:
       - name: Check for changepack log files in PR
         run: |
           CHANGED_FILES=$(git diff --name-only origin/${{ github.base_ref }}...HEAD)
-          echo "Changed files in PR:"
+          echo "=== Changed files in PR ==="
           echo "$CHANGED_FILES"
+          echo ""
 
+          TRACKED_DIRS="evidence_snv/ evidence_cnv/ pipeline/"
+          HAS_TRACKED_CHANGES=false
+
+          for dir in $TRACKED_DIRS; do
+            MATCHES=$(echo "$CHANGED_FILES" | grep "^${dir}" || true)
+            if [ -n "$MATCHES" ]; then
+              echo "Tracked directory changed: $dir"
+              echo "$MATCHES"
+              HAS_TRACKED_CHANGES=true
+            fi
+          done
+
+          if [ "$HAS_TRACKED_CHANGES" = false ]; then
+            echo ""
+            echo "No changes in tracked directories ($TRACKED_DIRS)."
+            echo "Changepacks JSON is not required. Skipping check."
+            exit 0
+          fi
+
+          echo ""
+          echo "=== Checking for changepack logs ==="
           CHANGEPACK_FILES=$(echo "$CHANGED_FILES" | grep '^\.changepacks/changepack_log_' || true)
 
           if [ -z "$CHANGEPACK_FILES" ]; then
+            echo ""
+            echo "::error::evidence_snv, evidence_cnv, pipeline 디렉토리에 변경사항이 있지만"
             echo "::error::changepacks JSON 파일이 PR에 포함되어 있지 않습니다."
             echo "::error::머지 전에 'changepacks' 명령어를 실행하여 변경 로그를 생성해주세요."
             exit 1
@@ -29,4 +53,5 @@ jobs:
 
           echo "Found changepack logs:"
           echo "$CHANGEPACK_FILES"
+          echo ""
           echo "Changepacks check passed."
