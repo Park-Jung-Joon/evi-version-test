@@ -8,11 +8,22 @@ from version import EVIDENCE_VERSION
 def analyze_snv(vcf_path: str) -> dict:
     """SNV variant를 분석하고 결과 딕셔너리를 반환한다."""
     print(f"[Evidence SNV {EVIDENCE_VERSION}] Analyzing: {vcf_path}")
+def analyze_snv(vcf_path: str, genome_build: str = "GRCh38") -> dict:
+    """SNV variant를 분석하고 결과 딕셔너리를 반환한다.
+
+    NOTE: API 변경 - genome_build 파라미터 추가 (하위 호환 깨짐)
+    기존 호출 코드에서 positional arg로 사용하던 경우 수정 필요.
+    """
+    print(
+        f"[Evidence SNV {EVIDENCE_VERSION}] "
+        f"Analyzing: {vcf_path} (build={genome_build})"
+    )
     results = {
         "total_variants": 150,
         "pathogenic": 3,
         "vus": 12,
         "benign": 135,
+        "genome_build": genome_build,
     }
     return results
 
