@@ -94,6 +94,65 @@ git push -u origin feat/snv-quality-filter
 - version.py의 EVIDENCE_VERSION이 변경되는지
 - PIPELINE_VERSION은 변경되지 않는지
 
+### 시나리오 1-1: Merge Block - evidence 변경인데 changepacks 없는 경우
+
+evidence_snv에 변경사항이 있지만 changepacks를 실행하지 않고 PR을 올린 경우, CI가 머지를 차단하는 시나리오.
+
+```bash
+# 1. dev에서 feature 브랜치 생성
+git checkout dev
+git checkout -b feat/snv-no-changepacks
+
+# 2. evidence_snv/main.py에 코드 변경 (changepacks 실행 안 함!)
+#    (예: 함수 수정 or 새 함수 추가)
+
+# 3. changepacks 실행 없이 바로 커밋 & push
+git add -A
+git commit -m "feat: SNV 로직 수정 (changepacks 누락)"
+git push -u origin feat/snv-no-changepacks
+
+# 4. GitHub에서 dev로 PR 생성
+#    → Changepacks Check CI가 실패하며 머지 차단
+```
+
+**확인 포인트:**
+- CI 로그에 "evidence_snv 디렉토리에 변경사항이 있지만 changepacks JSON이 없다"는 에러 메시지가 표시되는지
+- PR이 merge block 상태가 되는지
+- changepacks를 실행하고 JSON을 추가 커밋하면 CI가 통과하는지
+
+### 시나리오 1-2: Merge Block - pipeline 변경인데 changepacks 없는 경우
+
+pipeline에 변경사항이 있지만 changepacks를 실행하지 않은 경우의 머지 차단 시나리오.
+
+```bash
+# 1. dev에서 feature 브랜치 생성
+git checkout dev
+git checkout -b feat/pipeline-no-changepacks
+
+# 2. pipeline/main.py에 코드 변경 (changepacks 실행 안 함!)
+
+# 3. changepacks 실행 없이 바로 커밋 & push
+git add -A
+git commit -m "feat: pipeline 로직 수정 (changepacks 누락)"
+git push -u origin feat/pipeline-no-changepacks
+
+# 4. GitHub에서 dev로 PR 생성
+#    → Changepacks Check CI가 실패하며 머지 차단
+
+# 5. (복구) changepacks 실행 후 JSON 추가 커밋
+changepacks       # → pipeline 선택 → Patch → 노트 작성
+git add -A
+git commit -m "changepacks: pipeline Patch 버전 기록"
+git push
+
+# 6. CI가 재실행되어 통과 → 머지 가능
+```
+
+**확인 포인트:**
+- pipeline/ 변경만으로도 merge block이 동작하는지
+- changepacks JSON을 추가 커밋하면 CI가 통과로 전환되는지
+- genet/ 같은 비추적 디렉토리만 변경한 경우에는 changepacks 없이도 머지가 허용되는지
+
 ### 시나리오 2: pipeline 변경 → pipeline 버전 업
 
 ```bash
@@ -121,6 +180,7 @@ git push -u origin feat/pipeline-qc-step
 - EVIDENCE_VERSION은 이전 값 유지하는지
 
 ### 시나리오 3: 정기 자동 머지 (Scheduled Merge)
+
 
 ```bash
 # scheduled-merge.yaml이 30분마다 실행됨.
