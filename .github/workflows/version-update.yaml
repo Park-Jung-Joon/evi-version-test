@@ -1,0 +1,101 @@
+name: Version Update
+
+on:
+  push:
+    branches: [main]
+
+permissions:
+  contents: write
+
+jobs:
+  update-version:
+    runs-on: ubuntu-latest
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v4
+        with:
+          fetch-depth: 0
+          token: ${{ secrets.GITHUB_TOKEN }}
+
+      - name: Setup Python
+        uses: actions/setup-python@v5
+        with:
+          python-version: "3.12"
+
+      - name: Install changepacks
+        run: pip install changepacks
+
+      - name: Check for changepack logs
+        id: check_logs
+        run: |
+          LOG_COUNT=$(find .changepacks -name 'changepack_log_*.json' 2>/dev/null | wc -l)
+          echo "log_count=$LOG_COUNT" >> "$GITHUB_OUTPUT"
+          if [ "$LOG_COUNT" -eq 0 ]; then
+            echo "No changepack logs found. Skipping version update."
+          else
+            echo "Found $LOG_COUNT changepack log(s). Proceeding with version update."
+          fi
+
+      - name: Run changepacks update
+        if: steps.check_logs.outputs.log_count != '0'
+        run: changepacks update --yes
+
+      - name: Sync version.py
+        if: steps.check_logs.outputs.log_count != '0'
+        run: python scripts/sync_version.py
+
+      - name: Read updated versions
+        if: steps.check_logs.outputs.log_count != '0'
+        id: versions
+        run: |
+          EVI_VER=$(python -c "
+          import re
+          text = open('evidence_snv/pyproject.toml').read()
+          print(re.search(r'version\s*=\s*\"([^\"]+)\"', text).group(1))
+          ")
+          PIP_VER=$(python -c "
+          import re
+          text = open('pipeline/pyproject.toml').read()
+          print(re.search(r'version\s*=\s*\"([^\"]+)\"', text).group(1))
+          ")
+          echo "evidence_version=$EVI_VER" >> "$GITHUB_OUTPUT"
+          echo "pipeline_version=$PIP_VER" >> "$GITHUB_OUTPUT"
+
+      - name: Commit version changes
+        if: steps.check_logs.outputs.log_count != '0'
+        run: |
+          git config user.name "github-actions[bot]"
+          git config user.email "github-actions[bot]@users.noreply.github.com"
+          git add -A
+          git diff --staged --quiet && echo "No changes to commit" && exit 0
+          git commit -m "ci: version update - evidence v${{ steps.versions.outputs.evidence_version }}, pipeline v${{ steps.versions.outputs.pipeline_version }}"
+          git push
+
+      - name: Create git tags
+        if: steps.check_logs.outputs.log_count != '0'
+        run: |
+          EVI_VER="${{ steps.versions.outputs.evidence_version }}"
+          PIP_VER="${{ steps.versions.outputs.pipeline_version }}"
+
+          EVI_TAG="evidence-v${EVI_VER}"
+          PIP_TAG="pipeline-v${PIP_VER}"
+
+          if ! git tag -l "$EVI_TAG" | grep -q .; then
+            git tag -a "$EVI_TAG" -m "Evidence version ${EVI_VER}"
+            echo "Created tag: $EVI_TAG"
+          fi
+
+          if ! git tag -l "$PIP_TAG" | grep -q .; then
+            git tag -a "$PIP_TAG" -m "Pipeline version ${PIP_VER}"
+            echo "Created tag: $PIP_TAG"
+          fi
+
+          git push origin --tags
+
+      - name: Back-merge main to dev
+        if: steps.check_logs.outputs.log_count != '0'
+        run: |
+          git fetch origin dev
+          git checkout dev
+          git merge main --no-edit
+          git push origin dev

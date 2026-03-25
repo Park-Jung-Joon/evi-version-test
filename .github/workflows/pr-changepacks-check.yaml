@@ -1,0 +1,32 @@
+name: Changepacks Check
+
+on:
+  pull_request:
+    branches: [dev]
+
+jobs:
+  check-changepacks:
+    runs-on: ubuntu-latest
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v4
+        with:
+          fetch-depth: 0
+
+      - name: Check for changepack log files in PR
+        run: |
+          CHANGED_FILES=$(git diff --name-only origin/${{ github.base_ref }}...HEAD)
+          echo "Changed files in PR:"
+          echo "$CHANGED_FILES"
+
+          CHANGEPACK_FILES=$(echo "$CHANGED_FILES" | grep '^\.changepacks/changepack_log_' || true)
+
+          if [ -z "$CHANGEPACK_FILES" ]; then
+            echo "::error::changepacks JSON 파일이 PR에 포함되어 있지 않습니다."
+            echo "::error::머지 전에 'changepacks' 명령어를 실행하여 변경 로그를 생성해주세요."
+            exit 1
+          fi
+
+          echo "Found changepack logs:"
+          echo "$CHANGEPACK_FILES"
+          echo "Changepacks check passed."

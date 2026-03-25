@@ -1,0 +1,10 @@
+{
+  "baseBranch": "dev",
+  "ignore": [
+    "genet/**"
+  ],
+  "updateOn": {
+    "evidence_snv/pyproject.toml": ["evidence_cnv/pyproject.toml"],
+    "evidence_cnv/pyproject.toml": ["evidence_snv/pyproject.toml"]
+  }
+}

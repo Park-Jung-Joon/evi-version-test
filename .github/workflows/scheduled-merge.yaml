@@ -1,0 +1,71 @@
+name: Scheduled Dev to Main Merge
+
+on:
+  schedule:
+    - cron: '*/30 * * * *'  # 테스트: 30분마다 (추후 주 1회로 변경: '0 9 * * 1')
+  workflow_dispatch:  # 수동 실행도 가능
+
+permissions:
+  contents: write
+  pull-requests: write
+
+jobs:
+  auto-merge:
+    runs-on: ubuntu-latest
+    steps:
+      - name: Checkout dev branch
+        uses: actions/checkout@v4
+        with:
+          ref: dev
+          fetch-depth: 0
+          token: ${{ secrets.GITHUB_TOKEN }}
+
+      - name: Check for changepack logs on dev
+        id: check_logs
+        run: |
+          LOG_COUNT=$(find .changepacks -name 'changepack_log_*.json' 2>/dev/null | wc -l)
+          echo "log_count=$LOG_COUNT" >> "$GITHUB_OUTPUT"
+          if [ "$LOG_COUNT" -eq 0 ]; then
+            echo "No changepack logs on dev. Nothing to merge."
+          else
+            echo "Found $LOG_COUNT changepack log(s). Creating merge PR."
+          fi
+
+      - name: Check for diff between dev and main
+        if: steps.check_logs.outputs.log_count != '0'
+        id: check_diff
+        run: |
+          git fetch origin main
+          DIFF_COUNT=$(git rev-list --count origin/main..origin/dev)
+          echo "diff_count=$DIFF_COUNT" >> "$GITHUB_OUTPUT"
+          if [ "$DIFF_COUNT" -eq 0 ]; then
+            echo "dev and main are identical. No merge needed."
+          else
+            echo "dev is $DIFF_COUNT commit(s) ahead of main."
+          fi
+
+      - name: Create PR dev → main
+        if: steps.check_logs.outputs.log_count != '0' && steps.check_diff.outputs.diff_count != '0'
+        env:
+          GH_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+        run: |
+          EXISTING_PR=$(gh pr list --base main --head dev --state open --json number --jq '.[0].number')
+          if [ -n "$EXISTING_PR" ]; then
+            echo "PR #$EXISTING_PR already exists for dev → main. Skipping."
+            exit 0
+          fi
+
+          gh pr create \
+            --base main \
+            --head dev \
+            --title "release: dev → main scheduled merge ($(date +%Y-%m-%d))" \
+            --body "$(cat <<'EOF'
+          ## Scheduled Merge
+
+          dev 브랜치에 쌓인 changepacks를 main에 머지합니다.
+          머지 후 CI가 자동으로 버전을 업데이트합니다.
+
+          ### Changepack logs
+          $(find .changepacks -name 'changepack_log_*.json' -exec basename {} \;)
+          EOF
+          )"
