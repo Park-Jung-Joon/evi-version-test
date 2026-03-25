@@ -5,33 +5,41 @@ sys.path.append("..")
 from version import EVIDENCE_VERSION
 
 
-def analyze_snv(vcf_path: str) -> dict:
-    """SNV variant를 분석하고 결과 딕셔너리를 반환한다."""
-    print(f"[Evidence SNV {EVIDENCE_VERSION}] Analyzing: {vcf_path}")
-def analyze_snv(vcf_path: str, genome_build: str = "GRCh38") -> dict:
-    """SNV variant를 분석하고 결과 딕셔너리를 반환한다.
+class SnvAnalyzer:
+    """SNV 분석기. 기존 함수형 API를 클래스 기반으로 전면 변경.
 
-    NOTE: API 변경 - genome_build 파라미터 추가 (하위 호환 깨짐)
-    기존 호출 코드에서 positional arg로 사용하던 경우 수정 필요.
+    Breaking Change: analyze_snv() 함수가 제거되고
+    SnvAnalyzer 클래스로 대체됨.
     """
-    print(
-        f"[Evidence SNV {EVIDENCE_VERSION}] "
-        f"Analyzing: {vcf_path} (build={genome_build})"
-    )
-    results = {
-        "total_variants": 150,
-        "pathogenic": 3,
-        "vus": 12,
-        "benign": 135,
-        "genome_build": genome_build,
-    }
-    return results
+
+    SUPPORTED_BUILDS = ("GRCh37", "GRCh38")
+
+    def __init__(self, genome_build: str = "GRCh38"):
+        if genome_build not in self.SUPPORTED_BUILDS:
+            raise ValueError(
+                f"Unsupported genome build: {genome_build}. "
+                f"Must be one of {self.SUPPORTED_BUILDS}"
+            )
+        self.genome_build = genome_build
+
+    def analyze(self, vcf_path: str) -> dict:
+        print(
+            f"[Evidence SNV {EVIDENCE_VERSION}] "
+            f"Analyzing: {vcf_path} (build={self.genome_build})"
+        )
+        return {
+            "total_variants": 150,
+            "pathogenic": 3,
+            "vus": 12,
+            "benign": 135,
+            "genome_build": self.genome_build,
+        }
 
 
 def filter_by_quality(
     variants: dict, min_quality: int = 30
 ) -> dict:
-    """Quality score 기준으로 variant를 필터링한다."""
+    """Quality score 기준으로 variant를 필터링하여 결과를 반환한다."""
     filtered_count = int(variants["total_variants"] * 0.85)
     print(
         f"[Evidence SNV {EVIDENCE_VERSION}] "
@@ -45,7 +53,8 @@ def filter_by_quality(
 
 
 if __name__ == "__main__":
-    result = analyze_snv("sample_001.vcf")
+    analyzer = SnvAnalyzer(genome_build="GRCh38")
+    result = analyzer.analyze("sample_001.vcf")
     for k, v in result.items():
         print(f"  {k}: {v}")
 
