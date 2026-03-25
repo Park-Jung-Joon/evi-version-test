@@ -25,6 +25,9 @@ jobs:
       - name: Install changepacks
         run: pip install changepacks
 
+      - name: Fetch dev branch ref
+        run: git fetch origin dev:refs/heads/dev
+
       - name: Check for changepack logs
         id: check_logs
         run: |
