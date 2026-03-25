@@ -12,11 +12,11 @@ evi_version_test/
 │   ├── pr-changepacks-check.yaml   # dev PR 시 changepacks JSON 존재 확인
 │   ├── version-update.yaml         # main merge 시 버전 자동 업데이트 + 태그
 │   └── scheduled-merge.yaml        # 정기 dev→main 자동 머지
+├── evidence/
+│   └── pyproject.toml           # evidence 통합 패키지 (snv + cnv 공통 버전)
 ├── evidence_snv/
-│   ├── pyproject.toml           # evidence-snv 패키지 (evidence 버전 공유)
 │   └── main.py                  # SNV 분석 데모
 ├── evidence_cnv/
-│   ├── pyproject.toml           # evidence-cnv 패키지 (evidence 버전 공유)
 │   └── main.py                  # CNV 분석 데모
 ├── pipeline/
 │   ├── pyproject.toml           # pipeline 패키지
@@ -29,12 +29,12 @@ evi_version_test/
 
 ## 패키지 버전 정책
 
-| 패키지 | 구성 디렉토리 | 버전 동기화 |
-|--------|--------------|------------|
-| **evidence** | evidence_snv, evidence_cnv | 둘 중 하나라도 변경 시 동일 버전으로 업데이트 |
-| **pipeline** | pipeline | 독립 버전 관리 |
+| 패키지 | pyproject.toml 위치 | 추적 디렉토리 | 버전 관리 |
+|--------|---------------------|--------------|----------|
+| **evidence** | `evidence/pyproject.toml` | evidence_snv, evidence_cnv | 둘 중 하나라도 변경 시 버전 업데이트 |
+| **pipeline** | `pipeline/pyproject.toml` | pipeline | 독립 버전 관리 |
 
-`updateOn` 설정으로 evidence_snv ↔ evidence_cnv 버전이 자동 동기화됩니다.
+`evidence/pyproject.toml` 하나로 evidence_snv와 evidence_cnv의 버전을 통합 관리합니다. changepacks 실행 시 `evidence` 패키지 하나만 표시됩니다.
 
 ## 브랜치 전략
 
@@ -72,7 +72,7 @@ git checkout -b feat/snv-quality-filter
 # 2. evidence_snv/main.py에 기능 추가
 #    (예: filter_by_quality 함수 추가)
 
-# 3. changepacks 실행 → evidence-snv 선택 → Minor → 노트 작성
+# 3. changepacks 실행 → evidence 선택 → Minor → 노트 작성
 changepacks
 
 # 4. 커밋 & push
@@ -84,13 +84,13 @@ git push -u origin feat/snv-quality-filter
 
 # 6. dev → main 머지 시 CI가 자동으로:
 #    - changepacks update 실행
-#    - evidence_snv + evidence_cnv 모두 v1.1.0으로 업데이트
+#    - evidence 패키지 v1.1.0으로 업데이트
 #    - version.py의 EVIDENCE_VERSION = "v1.1.0"으로 갱신
 #    - evidence-v1.1.0 태그 생성
 ```
 
 **확인 포인트:**
-- evidence_cnv도 동일 버전(v1.1.0)으로 동기화 되는지
+- evidence/pyproject.toml의 버전이 v1.1.0으로 업데이트 되는지
 - version.py의 EVIDENCE_VERSION이 변경되는지
 - PIPELINE_VERSION은 변경되지 않는지
 
@@ -247,7 +247,7 @@ git checkout -b hotfix/cnv-scoring-fix
 
 # 2. evidence_cnv/main.py 버그 수정
 
-# 3. changepacks 실행 → evidence-cnv 선택 → Patch → 노트 작성
+# 3. changepacks 실행 → evidence 선택 → Patch → 노트 작성
 changepacks
 
 # 4. 커밋 & push
@@ -304,3 +304,6 @@ python pipeline/main.py
 
 - [versioning_tool_first_docs.md](versioning_tool_first_docs.md) - 버저닝 툴 도입 배경 및 비교
 - [jira_issue.md](jira_issue.md) - Jira + GitHub + Changepacks 연계 전체 가이드
+- [changepacks_setup_guide.md](changepacks_setup_guide.md) - Changepacks 설정 방법 및 사용법 상세 가이드
+- [presentation.md](presentation.md) - AS-IS/TO-BE 발표 자료
+- [report.md](report.md) - 개발 프로세스 개선 보고서
