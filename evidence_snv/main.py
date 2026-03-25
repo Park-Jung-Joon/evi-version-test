@@ -10,19 +10,28 @@ def analyze_snv(vcf_path: str, genome_build: str = "GRCh38") -> dict:
 
     NOTE: API 변경 - genome_build 파라미터 추가 (하위 호환 깨짐)
     기존 호출 코드에서 positional arg로 사용하던 경우 수정 필요.
+class SnvAnalyzer:
+    """SNV 분석기. 기존 함수형 API를 클래스 기반으로 전면 변경.
+
+    Breaking Change: analyze_snv() 함수가 제거되고
+    SnvAnalyzer 클래스로 대체됨.
     """
-    print(
-        f"[Evidence SNV {EVIDENCE_VERSION}] "
-        f"Analyzing: {vcf_path} (build={genome_build})"
-    )
-    results = {
-        "total_variants": 150,
-        "pathogenic": 3,
-        "vus": 12,
-        "benign": 135,
-        "genome_build": genome_build,
-    }
-    return results
+
+    def __init__(self, genome_build: str = "GRCh38"):
+        self.genome_build = genome_build
+
+    def analyze(self, vcf_path: str) -> dict:
+        print(
+            f"[Evidence SNV {EVIDENCE_VERSION}] "
+            f"Analyzing: {vcf_path} (build={self.genome_build})"
+        )
+        return {
+            "total_variants": 150,
+            "pathogenic": 3,
+            "vus": 12,
+            "benign": 135,
+            "genome_build": self.genome_build,
+        }
 
 
 def filter_by_quality(
@@ -42,7 +51,8 @@ def filter_by_quality(
 
 
 if __name__ == "__main__":
-    result = analyze_snv("sample_001.vcf")
+    analyzer = SnvAnalyzer(genome_build="GRCh38")
+    result = analyzer.analyze("sample_001.vcf")
     for k, v in result.items():
         print(f"  {k}: {v}")
 
