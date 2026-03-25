@@ -2,7 +2,7 @@ name: Scheduled Dev to Main Merge
 
 on:
   schedule:
-    - cron: '*/30 * * * *'  # 테스트: 30분마다 (추후 주 1회로 변경: '0 9 * * 1')
+    - cron: '*/5 * * * *'  # 테스트: 5분마다 (추후 주 1회로 변경: '0 9 * * 1')
   workflow_dispatch:  # 수동 실행도 가능
 
 permissions:
